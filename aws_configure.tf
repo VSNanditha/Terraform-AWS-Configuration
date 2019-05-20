@@ -5,11 +5,10 @@ resource "local_file" "students" {
 }
 
 resource "random_string" "password" {
+  count             = 2
   length            = 12
   special           = true
   override_special  = "@"
-  count             = 2
-
 }
 
 resource "aws_instance" "aws_configure" {
@@ -21,14 +20,8 @@ resource "aws_instance" "aws_configure" {
     "sg-037d55c15f0d46c39"
   ]
 
-  # provisioner "file" {
-  #   source      = "script.sh"
-  #   destination = "/tmp/"
-  # }
-
   provisioner "remote-exec" {
     inline = [
-      "echo ${random_string.password.*.result[count.index]}",
       "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config",
       "sudo service sshd restart",
       "sudo useradd student${count.index+1}",
