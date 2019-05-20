@@ -5,14 +5,11 @@ resource "local_file" "students" {
 }
 
 resource "random_string" "password" {
-  length            = 16
+  length            = 12
   special           = true
   override_special  = "@"
   count             = 2
 
-  provisioner "local-exec" {
-    command = "echo student${count.index+1}: ${self.result} >> students.txt"
-  }
 }
 
 resource "aws_instance" "aws_configure" {
@@ -32,7 +29,10 @@ resource "aws_instance" "aws_configure" {
   provisioner "remote-exec" {
     inline = [
       "echo ${random_string.password.*.result[count.index]}",
-      "sudo useradd student${count.index+1} -p ${random_string.password.*.result[count.index]}",
+      "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config",
+      "sudo service sshd restart",
+      "sudo useradd student${count.index+1}",
+      "sudo echo ${random_string.password.*.result[count.index]} | sudo passwd student${count.index+1} --stdin",
       "sudo yum -y update",
       "sudo yum install -y git",
     ]
@@ -42,4 +42,9 @@ resource "aws_instance" "aws_configure" {
       private_key = "${file("MyAWSKey2.pem")}"
     }
   }
+
+  provisioner "local-exec" {
+    command = "echo student${count.index+1}: ${random_string.password.*.result[count.index]} : ${self.public_ip} >> students.txt"
+  }
+
 }
