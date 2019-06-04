@@ -3,3 +3,4 @@
 *.txt
 *.tfstate*
 aws_creds.sh
+secrets.auto.tfvars

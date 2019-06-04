@@ -1,24 +1,27 @@
-provider "aws" {}
+provider "aws" {
+  access_key = "${var.access_key}"
+  secret_key = "${var.secret_key}"
+  region     = "${var.region}"
+}
 
 resource "local_file" "students" {
-    filename = "students.txt"
+    filename = "${var.output_filename}"
 }
 
 resource "random_string" "password" {
-  count             = 2
+  count             = "${var.instance_count}"
   length            = 12
   special           = true
   override_special  = "@"
 }
 
 resource "aws_instance" "aws_configure" {
-  count           = 2
-  ami             = "ami-0756fbca465a59a30"
-  instance_type   = "t2.micro"
-  key_name        = "MyAWSKey2"
-  vpc_security_group_ids = [
-    "sg-037d55c15f0d46c39"
-  ]
+  count           = "${var.instance_count}"
+  ami             = "${var.ami}"
+  instance_type   = "${var.instance_type}"
+  key_name        = "${var.key_name}"
+  vpc_security_group_ids = "${var.vpc_security_group_ids}"
+
 
   provisioner "remote-exec" {
     inline = [
@@ -32,12 +35,12 @@ resource "aws_instance" "aws_configure" {
     connection {
       type        = "ssh"
       user        = "ec2-user"
-      private_key = "${file("MyAWSKey2.pem")}"
+      private_key = "${file(join("", list(var.key_name, ".pem")))}"
     }
   }
 
   provisioner "local-exec" {
-    command = "echo student${count.index+1}: ${random_string.password.*.result[count.index]} : ${self.public_ip} >> students.txt"
+    command = "echo student${count.index+1}: ${random_string.password.*.result[count.index]} : ${self.public_ip} >> ${var.output_filename}"
   }
 
 }
